@@ -1,0 +1,64 @@
+name: Manual SSH Deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      server_ip:
+        description: 'Public IP of the EC2 server'
+        required: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Save PEM file
+        run: |
+          echo "${{ secrets.PEMFILE }}" > key.pem
+          chmod 600 key.pem
+
+      - name: Install git and nginx
+        run: |
+          ssh -o StrictHostKeyChecking=no -i key.pem ubuntu@${{ github.event.inputs.server_ip }} \
+          "sudo apt update && sudo apt install git nginx -y"
+
+      - name: Clone repo
+        run: |
+          ssh -o StrictHostKeyChecking=no -i key.pem ubuntu@${{ github.event.inputs.server_ip }} \
+          "git clone -b main https://github.com/haripriya/octo.git /tmp/octo"
+
+      - name: Create website directory
+        run: |
+          ssh -o StrictHostKeyChecking=no -i key.pem ubuntu@${{ github.event.inputs.server_ip }} \
+          "sudo mkdir -p /home/ubuntu/website"
+
+      - name: Copy website files
+        run: |
+          ssh -o StrictHostKeyChecking=no -i key.pem ubuntu@${{ github.event.inputs.server_ip }} \
+          "sudo cp /tmp/octo/index.html /home/ubuntu/website/ && sudo cp /tmp/octo/styles.css /home/ubuntu/website/"
+
+      - name: Set permissions
+        run: |
+          ssh -o StrictHostKeyChecking=no -i key.pem ubuntu@${{ github.event.inputs.server_ip }} \
+          "sudo chown -R www-data:www-data /home/ubuntu/website && sudo chmod -R 755 /home/ubuntu/website"
+
+      - name: Update nginx config
+        run: |
+          ssh -o StrictHostKeyChecking=no -i key.pem ubuntu@${{ github.event.inputs.server_ip }} \
+          "sudo sed -i 's|root /var/www/html;|root /home/ubuntu/website;|' /etc/nginx/sites-available/default"
+
+      - name: Test nginx config
+        run: |
+          ssh -o StrictHostKeyChecking=no -i key.pem ubuntu@${{ github.event.inputs.server_ip }} \
+          "sudo nginx -t"
+
+      - name: Restart nginx
+        run: |
+          ssh -o StrictHostKeyChecking=no -i key.pem ubuntu@${{ github.event.inputs.server_ip }} \
+          "sudo systemctl restart nginx"
+
+      - name: Done
+        run: echo "✅ Deployment complete!"
