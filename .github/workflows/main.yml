@@ -49,7 +49,7 @@ jobs:
       - name: Update nginx config
         run: |
           ssh -o StrictHostKeyChecking=no -i key.pem ubuntu@${{ github.event.inputs.server_ip }} \
-          "sudo sed -i 's|root /var/log/nginx;|root /home/ubuntu/website;|' /etc/nginx/sites-available/default"
+          "sudo sed -i 's|root /var/www/html;|root /home/ubuntu/website;|' /etc/nginx/sites-available/default"
 
       - name: Test nginx config
         run: |
