@@ -29,7 +29,7 @@ jobs:
       - name: Clone repo
         run: |
           ssh -o StrictHostKeyChecking=no -i key.pem ubuntu@${{ github.event.inputs.server_ip }} \
-          "git clone -b main https://github.com/haripriya/octo.git /tmp/octo"
+          "git clone -b main https://haripriyya:${{ secrets.devopstoken }}@github.com/haripriya/octo.git /tmp/octo"
 
       - name: Create website directory
         run: |
